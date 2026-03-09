@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArTra Demo — Arthropod Trait Extractor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a3c6e;
+      color: white;
+      padding: 1.2rem 2rem;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; }
+    header p { font-size: 0.85rem; opacity: 0.8; margin-top: 0.25rem; }
+
+    .container { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .card h2 { font-size: 1rem; font-weight: 600; color: #1a3c6e; margin-bottom: 0.75rem; }
+
+    .examples-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; align-items: center; }
+    .examples-label { font-size: 0.82rem; color: #666; }
+    .example-btn {
+      background: #e9ecef;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .example-btn:hover { background: #d1d5db; }
+
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      padding: 0.75rem;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    textarea:focus { border-color: #1a3c6e; }
+
+    .input-footer { display: flex; align-items: center; gap: 1rem; margin-top: 0.75rem; }
+
+    .extract-btn {
+      background: #1a3c6e;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.6rem 1.4rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.15s;
+    }
+    .extract-btn:hover:not(:disabled) { background: #14306e; }
+    .extract-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .timing { font-size: 0.82rem; color: #666; }
+    .char-count { font-size: 0.8rem; color: #888; margin-left: auto; }
+
+    .error-msg {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      border-radius: 6px;
+      color: #721c24;
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+      margin-top: 0.75rem;
+      display: none;
+    }
+
+    .spinner {
+      width: 15px; height: 15px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Annotated text */
+    .annotated-text {
+      font-size: 0.9rem;
+      line-height: 1.8;
+      word-break: break-word;
+    }
+    .entity {
+      border-radius: 3px;
+      padding: 1px 3px;
+      font-weight: 500;
+      cursor: default;
+    }
+    .entity-arthropod { background: #d4edda; border: 1px solid #28a745; color: #155724; }
+    .entity-trait     { background: #d1ecf1; border: 1px solid #17a2b8; color: #0c5460; }
+    .entity-value     { background: #fff3cd; border: 1px solid #ffc107; color: #856404; }
+
+    .legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .legend-item { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; border: 1px solid; }
+    .dot-arthropod { background: #d4edda; border-color: #28a745; }
+    .dot-trait     { background: #d1ecf1; border-color: #17a2b8; }
+    .dot-value     { background: #fff3cd; border-color: #ffc107; }
+
+    .stats-bar {
+      display: flex; gap: 1.5rem; flex-wrap: wrap;
+      font-size: 0.85rem; color: #555;
+      padding-top: 0.75rem;
+      border-top: 1px solid #e9ecef;
+      margin-top: 0.75rem;
+    }
+    .stats-bar strong { color: #1a3c6e; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    thead th {
+      background: #1a3c6e; color: white;
+      padding: 0.6rem 0.75rem; text-align: left; font-weight: 600;
+    }
+    tbody tr:nth-child(even) { background: #f8f9fa; }
+    tbody td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #e9ecef; vertical-align: top; }
+
+    .conf-badge {
+      display: inline-block;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: #e9ecef;
+    }
+    .conf-high { background: #d4edda; color: #155724; }
+    .conf-mid  { background: #fff3cd; color: #856404; }
+    .conf-low  { background: #f8d7da; color: #721c24; }
+
+    .comparison-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .comparison-table th, .comparison-table td {
+      padding: 0.5rem 0.75rem; border: 1px solid #dee2e6; text-align: center;
+    }
+    .comparison-table th { background: #e9ecef; font-weight: 600; }
+    .comparison-table td:first-child { text-align: left; font-weight: 500; }
+
+    .results-hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>ArTra Demo — Arthropod Trait Extractor</h1>
+  <p>Powered by Google Gemini API · Few-shot NER + Relation Extraction · Based on Cornelius et al. (2025)</p>
+</header>
+
+<div class="container">
+
+  <!-- Input Card -->
+  <div class="card">
+    <h2>Input Text</h2>
+    <div class="examples-row">
+      <span class="examples-label">Load example:</span>
+      <div id="examplesRow" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
+    </div>
+    <textarea id="inputText" placeholder="Paste taxonomic text here (English, 20–5000 characters)...
+Tip: press Ctrl+Enter to extract."></textarea>
+    <div class="input-footer">
+      <button class="extract-btn" id="extractBtn" onclick="doExtract()">
+        <div class="spinner" id="spinner"></div>
+        <span id="btnLabel">Extract Traits</span>
+      </button>
+      <span class="timing" id="timingDisplay"></span>
+      <span class="char-count" id="charCount">0 / 5000</span>
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection" class="results-hidden">
+
+    <!-- Annotated Text -->
+    <div class="card">
+      <h2>Annotated Text</h2>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot dot-arthropod"></div> Arthropod</div>
+        <div class="legend-item"><div class="legend-dot dot-trait"></div> Trait</div>
+        <div class="legend-item"><div class="legend-dot dot-value"></div> Value</div>
+      </div>
+      <div class="annotated-text" id="annotatedText"></div>
+      <div class="stats-bar" id="statsBar"></div>
+    </div>
+
+    <!-- Triplets Table -->
+    <div class="card">
+      <h2 id="tripletsTitle">Extracted Triplets</h2>
+      <table id="tripletsTable">
+        <thead>
+          <tr>
+            <th>Arthropod</th>
+            <th>Trait</th>
+            <th>Value</th>
+            <th>Conf.</th>
+          </tr>
+        </thead>
+        <tbody id="tripletsBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Comparison -->
+    <div class="card">
+      <h2>Approach Comparison</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr><th>Metric</th><th>Original (BioBERT+LUKE)</th><th>This Demo (Gemini)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Model size</td><td>~110M + ~340M params</td><td>Cloud API</td></tr>
+          <tr><td>Training data</td><td>25 manually annotated docs</td><td>0 (few-shot only)</td></tr>
+          <tr><td>NER method</td><td>Fine-tuned BioBERT</td><td>Few-shot Gemini</td></tr>
+          <tr><td>RE method</td><td>Fine-tuned LUKE</td><td>Few-shot Gemini</td></tr>
+          <tr><td>NER F1 Arthropod</td><td>0.78</td><td>Not measured</td></tr>
+          <tr><td>NER F1 Trait</td><td>0.55</td><td>Not measured</td></tr>
+          <tr><td>RE F1 (macro avg)</td><td>0.65</td><td>Not measured</td></tr>
+          <tr><td>Deployment</td><td>GPU + training pipeline</td><td>API key only</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const API_BASE = "http://localhost:8000";
+
+  async function loadExamples() {
+    try {
+      const res = await fetch(`${API_BASE}/api/examples`);
+      if (!res.ok) return;
+      const examples = await res.json();
+      const row = document.getElementById("examplesRow");
+      examples.forEach(ex => {
+        const btn = document.createElement("button");
+        btn.className = "example-btn";
+        btn.textContent = ex.title;
+        btn.onclick = () => {
+          document.getElementById("inputText").value = ex.text;
+          updateCharCount();
+          hideError();
+        };
+        row.appendChild(btn);
+      });
+    } catch (_) { /* backend not running yet */ }
+  }
+
+  function updateCharCount() {
+    const n = document.getElementById("inputText").value.length;
+    const el = document.getElementById("charCount");
+    el.textContent = `${n} / 5000`;
+    el.style.color = n > 5000 ? "#dc3545" : "#888";
+  }
+
+  document.getElementById("inputText").addEventListener("input", updateCharCount);
+  document.getElementById("inputText").addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doExtract();
+  });
+
+  function showError(msg) {
+    const el = document.getElementById("errorMsg");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+  function hideError() {
+    document.getElementById("errorMsg").style.display = "none";
+  }
+
+  function setLoading(on) {
+    document.getElementById("extractBtn").disabled = on;
+    document.getElementById("spinner").style.display = on ? "block" : "none";
+    document.getElementById("btnLabel").textContent = on ? "Extracting..." : "Extract Traits";
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function confClass(c) {
+    if (c == null) return "";
+    if (c >= 0.85) return "conf-high";
+    if (c >= 0.65) return "conf-mid";
+    return "conf-low";
+  }
+
+  function annotateText(originalText, entities) {
+    if (!entities || entities.length === 0) return escapeHtml(originalText);
+
+    const positioned = entities
+      .filter(e => e.start != null && e.end != null)
+      .sort((a, b) => a.start - b.start);
+
+    // Remove overlaps (keep first)
+    const merged = [];
+    for (const e of positioned) {
+      if (!merged.length || e.start >= merged[merged.length - 1].end) {
+        merged.push(e);
+      }
+    }
+
+    let html = "";
+    let cursor = 0;
+    for (const e of merged) {
+      if (e.start > cursor) html += escapeHtml(originalText.slice(cursor, e.start));
+      const cls = "entity entity-" + e.type.toLowerCase();
+      const label = originalText.slice(e.start, e.end);
+      html += `<span class="${cls}" title="${e.type}">${escapeHtml(label)}</span>`;
+      cursor = e.end;
+    }
+    if (cursor < originalText.length) html += escapeHtml(originalText.slice(cursor));
+    return html;
+  }
+
+  function renderResults(data, originalText) {
+    document.getElementById("resultsSection").classList.remove("results-hidden");
+
+    // Annotated text
+    document.getElementById("annotatedText").innerHTML = annotateText(originalText, data.entities);
+
+    // Stats
+    const counts = { Arthropod: 0, Trait: 0, Value: 0 };
+    for (const e of data.entities || []) if (counts[e.type] !== undefined) counts[e.type]++;
+    document.getElementById("statsBar").innerHTML =
+      `<span>Entities: <strong>${data.entities.length}</strong></span>` +
+      `<span>Arthropods: <strong>${counts.Arthropod}</strong></span>` +
+      `<span>Traits: <strong>${counts.Trait}</strong></span>` +
+      `<span>Values: <strong>${counts.Value}</strong></span>` +
+      `<span>Relations: <strong>${data.relationships.length}</strong></span>` +
+      `<span>Triplets: <strong>${data.triplets.length}</strong></span>`;
+
+    // Triplets table
+    const n = data.triplets.length;
+    document.getElementById("tripletsTitle").textContent = `Extracted Triplets (${n} found)`;
+    const tbody = document.getElementById("tripletsBody");
+    tbody.innerHTML = "";
+
+    if (!n) {
+      tbody.innerHTML = `<tr><td colspan="4" style="color:#888;text-align:center;padding:1rem;">No triplets extracted.</td></tr>`;
+      return;
+    }
+
+    // Build confidence lookup by trait name
+    const confLookup = {};
+    for (const e of data.entities || []) {
+      if (e.type === "Trait" && e.confidence != null) {
+        confLookup[e.text.toLowerCase()] = e.confidence;
+      }
+    }
+
+    for (const t of data.triplets) {
+      const conf = confLookup[t.trait.toLowerCase()];
+      const confText = conf != null ? conf.toFixed(2) : "—";
+      const cls = conf != null ? confClass(conf) : "";
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        `<td><em>${escapeHtml(t.arthropod)}</em></td>` +
+        `<td>${escapeHtml(t.trait)}</td>` +
+        `<td>${escapeHtml(t.value)}</td>` +
+        `<td><span class="conf-badge ${cls}">${confText}</span></td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  async function doExtract() {
+    hideError();
+    const text = document.getElementById("inputText").value.trim();
+    if (!text) { showError("Please enter some text first."); return; }
+    if (text.length < 20) { showError("Text is too short (min 20 characters)."); return; }
+    if (text.length > 5000) { showError("Text is too long (max 5000 characters)."); return; }
+
+    setLoading(true);
+    document.getElementById("timingDisplay").textContent = "";
+
+    try {
+      const res = await fetch(`${API_BASE}/api/extract`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${res.status}`);
+      }
+      const data = await res.json();
+      const secs = (data.processing_time_ms / 1000).toFixed(1);
+      document.getElementById("timingDisplay").textContent = `⏱ ${secs}s · ${data.model_used}`;
+      renderResults(data, text);
+    } catch (e) {
+      showError("Extraction failed: " + e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadExamples();
+</script>
+</body>
+</html>

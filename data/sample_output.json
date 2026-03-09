@@ -1,0 +1,33 @@
+{
+  "entities": [
+    {"text": "Pachybrachis sassii", "type": "Arthropod", "start": 0, "end": 19, "confidence": 0.95},
+    {"text": "Coleoptera", "type": "Arthropod", "start": 96, "end": 106, "confidence": 0.93},
+    {"text": "Chrysomelidae", "type": "Arthropod", "start": 108, "end": 121, "confidence": 0.92},
+    {"text": "body length", "type": "Trait", "start": 140, "end": 151, "confidence": 0.94},
+    {"text": "3.2–3.8 mm", "type": "Value", "start": 152, "end": 162, "confidence": 0.91},
+    {"text": "antennae", "type": "Trait", "start": 233, "end": 241, "confidence": 0.88},
+    {"text": "11 segments", "type": "Value", "start": 247, "end": 258, "confidence": 0.87},
+    {"text": "habitat", "type": "Trait", "start": 480, "end": 487, "confidence": 0.85},
+    {"text": "maquis shrubland", "type": "Value", "start": 463, "end": 479, "confidence": 0.83},
+    {"text": "elevation", "type": "Trait", "start": 500, "end": 510, "confidence": 0.86},
+    {"text": "100–400 m", "type": "Value", "start": 514, "end": 523, "confidence": 0.84}
+  ],
+  "relationships": [
+    {"subject": "Pachybrachis sassii", "predicate": "hasTrait", "object": "body length"},
+    {"subject": "body length", "predicate": "hasValue", "object": "3.2–3.8 mm"},
+    {"subject": "Pachybrachis sassii", "predicate": "hasTrait", "object": "antennae"},
+    {"subject": "antennae", "predicate": "hasValue", "object": "11 segments"},
+    {"subject": "Pachybrachis sassii", "predicate": "hasTrait", "object": "habitat"},
+    {"subject": "habitat", "predicate": "hasValue", "object": "maquis shrubland"},
+    {"subject": "Pachybrachis sassii", "predicate": "hasTrait", "object": "elevation"},
+    {"subject": "elevation", "predicate": "hasValue", "object": "100–400 m"}
+  ],
+  "triplets": [
+    {"arthropod": "Pachybrachis sassii", "trait": "body length", "value": "3.2–3.8 mm"},
+    {"arthropod": "Pachybrachis sassii", "trait": "antennae", "value": "11 segments"},
+    {"arthropod": "Pachybrachis sassii", "trait": "habitat", "value": "maquis shrubland"},
+    {"arthropod": "Pachybrachis sassii", "trait": "elevation", "value": "100–400 m"}
+  ],
+  "processing_time_ms": 2340,
+  "model_used": "gemini-2.0-flash"
+}
