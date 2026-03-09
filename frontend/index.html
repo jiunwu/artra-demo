@@ -177,30 +177,77 @@
     .link-hastrait  { stroke: #28a745; }
     .link-hasvalue  { stroke: #17a2b8; }
     .node-label     { font-size: 11px; fill: #333; pointer-events: none; }
+
+    /* Language Switcher */
+    .lang-switcher {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-left: auto;
+    }
+    .lang-switcher label {
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+    .lang-switcher select {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 4px;
+      padding: 0.25rem 0.4rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      outline: none;
+    }
+    .lang-switcher select option {
+      color: #333;
+      background: white;
+    }
+    header .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>ArTra Demo — Arthropod Trait Extractor</h1>
-  <p>Powered by Google Gemini API · Few-shot NER + Relation Extraction · Based on Cornelius et al. (2025)</p>
+  <div class="header-row">
+    <div>
+      <h1 data-i18n="title">ArTra Demo — Arthropod Trait Extractor</h1>
+      <p data-i18n="subtitle">Powered by Google Gemini API · Few-shot NER + Relation Extraction · Based on Cornelius et al. (2025)</p>
+    </div>
+    <div class="lang-switcher">
+      <label for="langSelect">🌐</label>
+      <select id="langSelect" onchange="switchLang(this.value)">
+        <option value="en">English</option>
+        <option value="zh-TW">繁體中文</option>
+        <option value="it">Italiano</option>
+        <option value="de">Deutsch</option>
+        <option value="fr">Français</option>
+      </select>
+    </div>
+  </div>
 </header>
 
 <div class="container">
 
   <!-- Input Card -->
   <div class="card">
-    <h2>Input Text</h2>
+    <h2 data-i18n="inputText">Input Text</h2>
     <div class="examples-row">
-      <span class="examples-label">Load example:</span>
+      <span class="examples-label" data-i18n="loadExample">Load example:</span>
       <div id="examplesRow" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
     </div>
-    <textarea id="inputText" placeholder="Paste taxonomic text here (English, 20–5000 characters)...
+    <textarea id="inputText" data-i18n-placeholder="placeholder" placeholder="Paste taxonomic text here (English, 20–5000 characters)...
 Tip: press Ctrl+Enter to extract."></textarea>
     <div class="input-footer">
       <button class="extract-btn" id="extractBtn" onclick="doExtract()">
         <div class="spinner" id="spinner"></div>
-        <span id="btnLabel">Extract Traits</span>
+        <span id="btnLabel" data-i18n="extractBtn">Extract Traits</span>
       </button>
       <span class="timing" id="timingDisplay"></span>
       <span class="char-count" id="charCount">0 / 5000</span>
@@ -213,11 +260,11 @@ Tip: press Ctrl+Enter to extract."></textarea>
 
     <!-- Annotated Text -->
     <div class="card">
-      <h2>Annotated Text</h2>
+      <h2 data-i18n="annotatedText">Annotated Text</h2>
       <div class="legend">
-        <div class="legend-item"><div class="legend-dot dot-arthropod"></div> Arthropod</div>
-        <div class="legend-item"><div class="legend-dot dot-trait"></div> Trait</div>
-        <div class="legend-item"><div class="legend-dot dot-value"></div> Value</div>
+        <div class="legend-item"><div class="legend-dot dot-arthropod"></div> <span data-i18n="arthropod">Arthropod</span></div>
+        <div class="legend-item"><div class="legend-dot dot-trait"></div> <span data-i18n="trait">Trait</span></div>
+        <div class="legend-item"><div class="legend-dot dot-value"></div> <span data-i18n="value">Value</span></div>
       </div>
       <div class="annotated-text" id="annotatedText"></div>
       <div class="stats-bar" id="statsBar"></div>
@@ -225,14 +272,14 @@ Tip: press Ctrl+Enter to extract."></textarea>
 
     <!-- Triplets Table -->
     <div class="card">
-      <h2 id="tripletsTitle">Extracted Triplets</h2>
+      <h2 id="tripletsTitle" data-i18n="extractedTriplets">Extracted Triplets</h2>
       <table id="tripletsTable">
         <thead>
           <tr>
-            <th>Arthropod</th>
-            <th>Trait</th>
-            <th>Value</th>
-            <th>Conf.</th>
+            <th data-i18n="arthropod">Arthropod</th>
+            <th data-i18n="trait">Trait</th>
+            <th data-i18n="value">Value</th>
+            <th data-i18n="conf">Conf.</th>
           </tr>
         </thead>
         <tbody id="tripletsBody"></tbody>
@@ -241,32 +288,32 @@ Tip: press Ctrl+Enter to extract."></textarea>
 
     <!-- Knowledge Graph -->
     <div class="card">
-      <h2>Knowledge Graph</h2>
+      <h2 data-i18n="knowledgeGraph">Knowledge Graph</h2>
       <div class="graph-legend">
-        <div class="graph-legend-item"><div class="graph-legend-circle" style="background:#28a745"></div> Arthropod</div>
-        <div class="graph-legend-item"><div class="graph-legend-circle" style="background:#17a2b8"></div> Trait</div>
-        <div class="graph-legend-item"><div class="graph-legend-circle" style="background:#ffc107"></div> Value</div>
-        <span style="color:#888;margin-left:auto;">Drag nodes to rearrange</span>
+        <div class="graph-legend-item"><div class="graph-legend-circle" style="background:#28a745"></div> <span data-i18n="arthropod">Arthropod</span></div>
+        <div class="graph-legend-item"><div class="graph-legend-circle" style="background:#17a2b8"></div> <span data-i18n="trait">Trait</span></div>
+        <div class="graph-legend-item"><div class="graph-legend-circle" style="background:#ffc107"></div> <span data-i18n="value">Value</span></div>
+        <span style="color:#888;margin-left:auto;" data-i18n="dragNodes">Drag nodes to rearrange</span>
       </div>
       <div id="graphContainer"></div>
     </div>
 
     <!-- Comparison -->
     <div class="card">
-      <h2>Approach Comparison</h2>
+      <h2 data-i18n="approachComparison">Approach Comparison</h2>
       <table class="comparison-table">
         <thead>
-          <tr><th>Metric</th><th>Original (BioBERT+LUKE)</th><th>This Demo (Gemini)</th></tr>
+          <tr><th data-i18n="metric">Metric</th><th data-i18n="originalMethod">Original (BioBERT+LUKE)</th><th data-i18n="thisDemo">This Demo (Gemini)</th></tr>
         </thead>
         <tbody>
-          <tr><td>Model size</td><td>~110M + ~340M params</td><td>Cloud API</td></tr>
-          <tr><td>Training data</td><td>25 manually annotated docs</td><td>0 (few-shot only)</td></tr>
-          <tr><td>NER method</td><td>Fine-tuned BioBERT</td><td>Few-shot Gemini</td></tr>
-          <tr><td>RE method</td><td>Fine-tuned LUKE</td><td>Few-shot Gemini</td></tr>
-          <tr><td>NER F1 Arthropod</td><td>0.78</td><td>Not measured</td></tr>
-          <tr><td>NER F1 Trait</td><td>0.55</td><td>Not measured</td></tr>
-          <tr><td>RE F1 (macro avg)</td><td>0.65</td><td>Not measured</td></tr>
-          <tr><td>Deployment</td><td>GPU + training pipeline</td><td>API key only</td></tr>
+          <tr><td data-i18n="modelSize">Model size</td><td>~110M + ~340M params</td><td>Cloud API</td></tr>
+          <tr><td data-i18n="trainingData">Training data</td><td data-i18n="trainingDataOriginal">25 manually annotated docs</td><td data-i18n="trainingDataDemo">0 (few-shot only)</td></tr>
+          <tr><td data-i18n="nerMethod">NER method</td><td>Fine-tuned BioBERT</td><td>Few-shot Gemini</td></tr>
+          <tr><td data-i18n="reMethod">RE method</td><td>Fine-tuned LUKE</td><td>Few-shot Gemini</td></tr>
+          <tr><td>NER F1 Arthropod</td><td>0.78</td><td data-i18n="notMeasured">Not measured</td></tr>
+          <tr><td>NER F1 Trait</td><td>0.55</td><td data-i18n="notMeasured">Not measured</td></tr>
+          <tr><td>RE F1 (macro avg)</td><td>0.65</td><td data-i18n="notMeasured">Not measured</td></tr>
+          <tr><td data-i18n="deployment">Deployment</td><td data-i18n="deploymentOriginal">GPU + training pipeline</td><td data-i18n="deploymentDemo">API key only</td></tr>
         </tbody>
       </table>
     </div>
@@ -276,6 +323,266 @@ Tip: press Ctrl+Enter to extract."></textarea>
 
 <script>
   const API_BASE = "";
+
+  // ── i18n Translations ─────────────────────────────────────────────────
+  const i18n = {
+    en: {
+      title: "ArTra Demo — Arthropod Trait Extractor",
+      subtitle: "Powered by Google Gemini API · Few-shot NER + Relation Extraction · Based on Cornelius et al. (2025)",
+      inputText: "Input Text",
+      loadExample: "Load example:",
+      placeholder: "Paste taxonomic text here (English, 20–5000 characters)...\nTip: press Ctrl+Enter to extract.",
+      extractBtn: "Extract Traits",
+      extracting: "Extracting...",
+      annotatedText: "Annotated Text",
+      arthropod: "Arthropod",
+      trait: "Trait",
+      value: "Value",
+      conf: "Conf.",
+      extractedTriplets: "Extracted Triplets",
+      tripletsFound: "Extracted Triplets ({n} found)",
+      noTriplets: "No triplets extracted.",
+      knowledgeGraph: "Knowledge Graph",
+      dragNodes: "Drag nodes to rearrange",
+      approachComparison: "Approach Comparison",
+      metric: "Metric",
+      originalMethod: "Original (BioBERT+LUKE)",
+      thisDemo: "This Demo (Gemini)",
+      modelSize: "Model size",
+      trainingData: "Training data",
+      trainingDataOriginal: "25 manually annotated docs",
+      trainingDataDemo: "0 (few-shot only)",
+      nerMethod: "NER method",
+      reMethod: "RE method",
+      notMeasured: "Not measured",
+      deployment: "Deployment",
+      deploymentOriginal: "GPU + training pipeline",
+      deploymentDemo: "API key only",
+      entities: "Entities",
+      arthropods: "Arthropods",
+      traits: "Traits",
+      values: "Values",
+      relations: "Relations",
+      triplets: "Triplets",
+      errorEmpty: "Please enter some text first.",
+      errorShort: "Text is too short (min 20 characters).",
+      errorLong: "Text is too long (max 5000 characters).",
+      errorFailed: "Extraction failed: ",
+    },
+    "zh-TW": {
+      title: "ArTra 展示 — 節肢動物特徵抽取器",
+      subtitle: "由 Google Gemini API 驅動 · Few-shot NER + 關係抽取 · 基於 Cornelius et al. (2025)",
+      inputText: "輸入文本",
+      loadExample: "載入範例：",
+      placeholder: "在此貼上分類學文本（英文，20–5000 字元）...\n提示：按 Ctrl+Enter 開始抽取。",
+      extractBtn: "抽取特徵",
+      extracting: "抽取中...",
+      annotatedText: "標註文本",
+      arthropod: "節肢動物",
+      trait: "特徵",
+      value: "數值",
+      conf: "信心度",
+      extractedTriplets: "抽取的三元組",
+      tripletsFound: "抽取的三元組（找到 {n} 個）",
+      noTriplets: "未抽取到三元組。",
+      knowledgeGraph: "知識圖譜",
+      dragNodes: "拖曳節點以重新排列",
+      approachComparison: "方法比較",
+      metric: "指標",
+      originalMethod: "原始方法 (BioBERT+LUKE)",
+      thisDemo: "本展示 (Gemini)",
+      modelSize: "模型大小",
+      trainingData: "訓練資料",
+      trainingDataOriginal: "25 篇人工標註文件",
+      trainingDataDemo: "0（僅 few-shot）",
+      nerMethod: "NER 方法",
+      reMethod: "RE 方法",
+      notMeasured: "未測量",
+      deployment: "部署方式",
+      deploymentOriginal: "GPU + 訓練流程",
+      deploymentDemo: "僅需 API 金鑰",
+      entities: "實體",
+      arthropods: "節肢動物",
+      traits: "特徵",
+      values: "數值",
+      relations: "關係",
+      triplets: "三元組",
+      errorEmpty: "請先輸入文本。",
+      errorShort: "文本太短（最少 20 字元）。",
+      errorLong: "文本太長（最多 5000 字元）。",
+      errorFailed: "抽取失敗：",
+    },
+    it: {
+      title: "ArTra Demo — Estrattore di Tratti degli Artropodi",
+      subtitle: "Alimentato da Google Gemini API · Few-shot NER + Estrazione di Relazioni · Basato su Cornelius et al. (2025)",
+      inputText: "Testo di Input",
+      loadExample: "Carica esempio:",
+      placeholder: "Incolla qui il testo tassonomico (inglese, 20–5000 caratteri)...\nSuggerimento: premi Ctrl+Invio per estrarre.",
+      extractBtn: "Estrai Tratti",
+      extracting: "Estrazione...",
+      annotatedText: "Testo Annotato",
+      arthropod: "Artropode",
+      trait: "Tratto",
+      value: "Valore",
+      conf: "Conf.",
+      extractedTriplets: "Triplette Estratte",
+      tripletsFound: "Triplette Estratte ({n} trovate)",
+      noTriplets: "Nessuna tripletta estratta.",
+      knowledgeGraph: "Grafo della Conoscenza",
+      dragNodes: "Trascina i nodi per riordinare",
+      approachComparison: "Confronto degli Approcci",
+      metric: "Metrica",
+      originalMethod: "Originale (BioBERT+LUKE)",
+      thisDemo: "Questa Demo (Gemini)",
+      modelSize: "Dimensione modello",
+      trainingData: "Dati di addestramento",
+      trainingDataOriginal: "25 documenti annotati manualmente",
+      trainingDataDemo: "0 (solo few-shot)",
+      nerMethod: "Metodo NER",
+      reMethod: "Metodo RE",
+      notMeasured: "Non misurato",
+      deployment: "Distribuzione",
+      deploymentOriginal: "GPU + pipeline di addestramento",
+      deploymentDemo: "Solo chiave API",
+      entities: "Entità",
+      arthropods: "Artropodi",
+      traits: "Tratti",
+      values: "Valori",
+      relations: "Relazioni",
+      triplets: "Triplette",
+      errorEmpty: "Inserisci prima del testo.",
+      errorShort: "Il testo è troppo corto (min 20 caratteri).",
+      errorLong: "Il testo è troppo lungo (max 5000 caratteri).",
+      errorFailed: "Estrazione fallita: ",
+    },
+    de: {
+      title: "ArTra Demo — Arthropoden-Merkmal-Extraktor",
+      subtitle: "Angetrieben von Google Gemini API · Few-shot NER + Relationsextraktion · Basierend auf Cornelius et al. (2025)",
+      inputText: "Eingabetext",
+      loadExample: "Beispiel laden:",
+      placeholder: "Taxonomischen Text hier einfügen (Englisch, 20–5000 Zeichen)...\nTipp: Strg+Eingabe zum Extrahieren drücken.",
+      extractBtn: "Merkmale extrahieren",
+      extracting: "Extrahiere...",
+      annotatedText: "Annotierter Text",
+      arthropod: "Arthropode",
+      trait: "Merkmal",
+      value: "Wert",
+      conf: "Konf.",
+      extractedTriplets: "Extrahierte Tripel",
+      tripletsFound: "Extrahierte Tripel ({n} gefunden)",
+      noTriplets: "Keine Tripel extrahiert.",
+      knowledgeGraph: "Wissensgraph",
+      dragNodes: "Knoten ziehen zum Neuanordnen",
+      approachComparison: "Vergleich der Ansätze",
+      metric: "Metrik",
+      originalMethod: "Original (BioBERT+LUKE)",
+      thisDemo: "Diese Demo (Gemini)",
+      modelSize: "Modellgröße",
+      trainingData: "Trainingsdaten",
+      trainingDataOriginal: "25 manuell annotierte Dokumente",
+      trainingDataDemo: "0 (nur Few-shot)",
+      nerMethod: "NER-Methode",
+      reMethod: "RE-Methode",
+      notMeasured: "Nicht gemessen",
+      deployment: "Bereitstellung",
+      deploymentOriginal: "GPU + Trainings-Pipeline",
+      deploymentDemo: "Nur API-Schlüssel",
+      entities: "Entitäten",
+      arthropods: "Arthropoden",
+      traits: "Merkmale",
+      values: "Werte",
+      relations: "Relationen",
+      triplets: "Tripel",
+      errorEmpty: "Bitte zuerst Text eingeben.",
+      errorShort: "Text ist zu kurz (mind. 20 Zeichen).",
+      errorLong: "Text ist zu lang (max. 5000 Zeichen).",
+      errorFailed: "Extraktion fehlgeschlagen: ",
+    },
+    fr: {
+      title: "ArTra Démo — Extracteur de Traits des Arthropodes",
+      subtitle: "Propulsé par Google Gemini API · Few-shot NER + Extraction de Relations · Basé sur Cornelius et al. (2025)",
+      inputText: "Texte d'entrée",
+      loadExample: "Charger un exemple :",
+      placeholder: "Collez le texte taxonomique ici (anglais, 20–5000 caractères)...\nAstuce : appuyez sur Ctrl+Entrée pour extraire.",
+      extractBtn: "Extraire les Traits",
+      extracting: "Extraction...",
+      annotatedText: "Texte Annoté",
+      arthropod: "Arthropode",
+      trait: "Trait",
+      value: "Valeur",
+      conf: "Conf.",
+      extractedTriplets: "Triplets Extraits",
+      tripletsFound: "Triplets Extraits ({n} trouvés)",
+      noTriplets: "Aucun triplet extrait.",
+      knowledgeGraph: "Graphe de Connaissances",
+      dragNodes: "Glissez les nœuds pour réorganiser",
+      approachComparison: "Comparaison des Approches",
+      metric: "Métrique",
+      originalMethod: "Original (BioBERT+LUKE)",
+      thisDemo: "Cette Démo (Gemini)",
+      modelSize: "Taille du modèle",
+      trainingData: "Données d'entraînement",
+      trainingDataOriginal: "25 documents annotés manuellement",
+      trainingDataDemo: "0 (few-shot uniquement)",
+      nerMethod: "Méthode NER",
+      reMethod: "Méthode RE",
+      notMeasured: "Non mesuré",
+      deployment: "Déploiement",
+      deploymentOriginal: "GPU + pipeline d'entraînement",
+      deploymentDemo: "Clé API uniquement",
+      entities: "Entités",
+      arthropods: "Arthropodes",
+      traits: "Traits",
+      values: "Valeurs",
+      relations: "Relations",
+      triplets: "Triplets",
+      errorEmpty: "Veuillez d'abord saisir du texte.",
+      errorShort: "Le texte est trop court (min 20 caractères).",
+      errorLong: "Le texte est trop long (max 5000 caractères).",
+      errorFailed: "Échec de l'extraction : ",
+    },
+  };
+
+  let currentLang = "en";
+
+  function t(key) {
+    return (i18n[currentLang] && i18n[currentLang][key]) || i18n.en[key] || key;
+  }
+
+  function switchLang(lang) {
+    currentLang = lang;
+    localStorage.setItem("artra-lang", lang);
+    document.documentElement.lang = lang === "zh-TW" ? "zh-Hant" : lang;
+
+    // Update all elements with data-i18n
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.getAttribute("data-i18n");
+      if (i18n[lang] && i18n[lang][key]) {
+        el.textContent = i18n[lang][key];
+      }
+    });
+
+    // Update placeholder attributes
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+      const key = el.getAttribute("data-i18n-placeholder");
+      if (i18n[lang] && i18n[lang][key]) {
+        el.placeholder = i18n[lang][key];
+      }
+    });
+
+    // Update page title
+    document.title = t("title");
+  }
+
+  // Restore saved language preference
+  (function() {
+    const saved = localStorage.getItem("artra-lang");
+    if (saved && i18n[saved]) {
+      currentLang = saved;
+      document.getElementById("langSelect").value = saved;
+      switchLang(saved);
+    }
+  })();
 
   async function loadExamples() {
     try {
@@ -321,7 +628,7 @@ Tip: press Ctrl+Enter to extract."></textarea>
   function setLoading(on) {
     document.getElementById("extractBtn").disabled = on;
     document.getElementById("spinner").style.display = on ? "block" : "none";
-    document.getElementById("btnLabel").textContent = on ? "Extracting..." : "Extract Traits";
+    document.getElementById("btnLabel").textContent = on ? t("extracting") : t("extractBtn");
   }
 
   function escapeHtml(s) {
@@ -373,21 +680,21 @@ Tip: press Ctrl+Enter to extract."></textarea>
     const counts = { Arthropod: 0, Trait: 0, Value: 0 };
     for (const e of data.entities || []) if (counts[e.type] !== undefined) counts[e.type]++;
     document.getElementById("statsBar").innerHTML =
-      `<span>Entities: <strong>${data.entities.length}</strong></span>` +
-      `<span>Arthropods: <strong>${counts.Arthropod}</strong></span>` +
-      `<span>Traits: <strong>${counts.Trait}</strong></span>` +
-      `<span>Values: <strong>${counts.Value}</strong></span>` +
-      `<span>Relations: <strong>${data.relationships.length}</strong></span>` +
-      `<span>Triplets: <strong>${data.triplets.length}</strong></span>`;
+      `<span>${t("entities")}: <strong>${data.entities.length}</strong></span>` +
+      `<span>${t("arthropods")}: <strong>${counts.Arthropod}</strong></span>` +
+      `<span>${t("traits")}: <strong>${counts.Trait}</strong></span>` +
+      `<span>${t("values")}: <strong>${counts.Value}</strong></span>` +
+      `<span>${t("relations")}: <strong>${data.relationships.length}</strong></span>` +
+      `<span>${t("triplets")}: <strong>${data.triplets.length}</strong></span>`;
 
     // Triplets table
     const n = data.triplets.length;
-    document.getElementById("tripletsTitle").textContent = `Extracted Triplets (${n} found)`;
+    document.getElementById("tripletsTitle").textContent = t("tripletsFound").replace("{n}", n);
     const tbody = document.getElementById("tripletsBody");
     tbody.innerHTML = "";
 
     if (!n) {
-      tbody.innerHTML = `<tr><td colspan="4" style="color:#888;text-align:center;padding:1rem;">No triplets extracted.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" style="color:#888;text-align:center;padding:1rem;">${t("noTriplets")}</td></tr>`;
       return;
     }
 
@@ -416,9 +723,9 @@ Tip: press Ctrl+Enter to extract."></textarea>
   async function doExtract() {
     hideError();
     const text = document.getElementById("inputText").value.trim();
-    if (!text) { showError("Please enter some text first."); return; }
-    if (text.length < 20) { showError("Text is too short (min 20 characters)."); return; }
-    if (text.length > 5000) { showError("Text is too long (max 5000 characters)."); return; }
+    if (!text) { showError(t("errorEmpty")); return; }
+    if (text.length < 20) { showError(t("errorShort")); return; }
+    if (text.length > 5000) { showError(t("errorLong")); return; }
 
     setLoading(true);
     document.getElementById("timingDisplay").textContent = "";
@@ -439,7 +746,7 @@ Tip: press Ctrl+Enter to extract."></textarea>
       renderResults(data, text);
       renderGraph(data);
     } catch (e) {
-      showError("Extraction failed: " + e.message);
+      showError(t("errorFailed") + e.message);
     } finally {
       setLoading(false);
     }
