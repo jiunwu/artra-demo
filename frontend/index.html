@@ -164,6 +164,19 @@
     .comparison-table td:first-child { text-align: left; font-weight: 500; }
 
     .results-hidden { display: none; }
+
+    /* Knowledge Graph */
+    #graphContainer { width: 100%; height: 420px; border: 1px solid #e9ecef; border-radius: 6px; overflow: hidden; background: #fafafa; }
+    .graph-legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; font-size: 0.8rem; }
+    .graph-legend-item { display: flex; align-items: center; gap: 0.35rem; }
+    .graph-legend-circle { width: 12px; height: 12px; border-radius: 50%; }
+    .node-arthropod { fill: #28a745; }
+    .node-trait     { fill: #17a2b8; }
+    .node-value     { fill: #ffc107; }
+    .link           { stroke: #adb5bd; stroke-opacity: 0.7; }
+    .link-hastrait  { stroke: #28a745; }
+    .link-hasvalue  { stroke: #17a2b8; }
+    .node-label     { font-size: 11px; fill: #333; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -224,6 +237,18 @@ Tip: press Ctrl+Enter to extract."></textarea>
         </thead>
         <tbody id="tripletsBody"></tbody>
       </table>
+    </div>
+
+    <!-- Knowledge Graph -->
+    <div class="card">
+      <h2>Knowledge Graph</h2>
+      <div class="graph-legend">
+        <div class="graph-legend-item"><div class="graph-legend-circle" style="background:#28a745"></div> Arthropod</div>
+        <div class="graph-legend-item"><div class="graph-legend-circle" style="background:#17a2b8"></div> Trait</div>
+        <div class="graph-legend-item"><div class="graph-legend-circle" style="background:#ffc107"></div> Value</div>
+        <span style="color:#888;margin-left:auto;">Drag nodes to rearrange</span>
+      </div>
+      <div id="graphContainer"></div>
     </div>
 
     <!-- Comparison -->
@@ -412,6 +437,7 @@ Tip: press Ctrl+Enter to extract."></textarea>
       const secs = (data.processing_time_ms / 1000).toFixed(1);
       document.getElementById("timingDisplay").textContent = `⏱ ${secs}s · ${data.model_used}`;
       renderResults(data, text);
+      renderGraph(data);
     } catch (e) {
       showError("Extraction failed: " + e.message);
     } finally {
@@ -419,7 +445,92 @@ Tip: press Ctrl+Enter to extract."></textarea>
     }
   }
 
+  // ── Knowledge Graph ──────────────────────────────────────────────────────
+  function renderGraph(data) {
+    const container = document.getElementById("graphContainer");
+    container.innerHTML = "";
+
+    const width = container.clientWidth || 900;
+    const height = 420;
+
+    // Build unique nodes and links from triplets
+    const nodeMap = new Map();
+    const links = [];
+
+    function addNode(text, type) {
+      const key = `${type}::${text}`;
+      if (!nodeMap.has(key)) nodeMap.set(key, { id: key, label: text, type });
+      return key;
+    }
+
+    for (const t of data.triplets) {
+      const a = addNode(t.arthropod, "Arthropod");
+      const tr = addNode(t.trait, "Trait");
+      const v = addNode(t.value, "Value");
+      links.push({ source: a, target: tr, label: "hasTrait" });
+      links.push({ source: tr, target: v, label: "hasValue" });
+    }
+
+    const nodes = Array.from(nodeMap.values());
+    if (!nodes.length) return;
+
+    const colorMap = { Arthropod: "#28a745", Trait: "#17a2b8", Value: "#ffc107" };
+    const radiusMap = { Arthropod: 18, Trait: 14, Value: 12 };
+
+    const svg = d3.select("#graphContainer").append("svg")
+      .attr("width", width).attr("height", height);
+
+    // Arrow markers
+    ["hasTrait","hasValue"].forEach(label => {
+      svg.append("defs").append("marker")
+        .attr("id", `arrow-${label}`)
+        .attr("viewBox", "0 -4 8 8").attr("refX", 22).attr("refY", 0)
+        .attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto")
+        .append("path").attr("d", "M0,-4L8,0L0,4").attr("fill", label === "hasTrait" ? "#28a745" : "#17a2b8");
+    });
+
+    const sim = d3.forceSimulation(nodes)
+      .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+      .force("charge", d3.forceManyBody().strength(-300))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collision", d3.forceCollide(30));
+
+    const link = svg.append("g").selectAll("line")
+      .data(links).join("line")
+      .attr("class", d => `link link-${d.label.toLowerCase()}`)
+      .attr("stroke-width", 1.5)
+      .attr("marker-end", d => `url(#arrow-${d.label})`);
+
+    const node = svg.append("g").selectAll("g")
+      .data(nodes).join("g")
+      .call(d3.drag()
+        .on("start", (event, d) => { if (!event.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+        .on("drag",  (event, d) => { d.fx = event.x; d.fy = event.y; })
+        .on("end",   (event, d) => { if (!event.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
+      );
+
+    node.append("circle")
+      .attr("r", d => radiusMap[d.type])
+      .attr("fill", d => colorMap[d.type])
+      .attr("fill-opacity", 0.85)
+      .attr("stroke", "white").attr("stroke-width", 1.5);
+
+    node.append("text")
+      .attr("class", "node-label")
+      .attr("dy", d => radiusMap[d.type] + 12)
+      .attr("text-anchor", "middle")
+      .text(d => d.label.length > 20 ? d.label.slice(0, 18) + "…" : d.label);
+
+    sim.on("tick", () => {
+      link
+        .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+      node.attr("transform", d => `translate(${d.x},${d.y})`);
+    });
+  }
+
   loadExamples();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 </body>
 </html>
