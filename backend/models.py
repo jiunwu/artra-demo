@@ -24,7 +24,7 @@ class Triplet(BaseModel):
 
 class ExtractionRequest(BaseModel):
     text: str
-    model: Optional[str] = "gemini-2.5-flash"
+    model: Optional[str] = "gemini-3.1-flash-lite-preview"
 
 
 class ExtractionResponse(BaseModel):

@@ -103,7 +103,7 @@ def extract(request: ExtractionRequest):
     if len(request.text) > 10000:
         raise HTTPException(status_code=400, detail="Text too long (max 10000 chars)")
     try:
-        return extractor.extract(request.text, model=request.model or "gemini-2.5-flash")
+        return extractor.extract(request.text, model=request.model or "gemini-3.1-flash-lite-preview")
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
