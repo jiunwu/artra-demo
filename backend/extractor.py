@@ -55,7 +55,7 @@ def _find_entity_positions(text: str, entity_text: str) -> tuple[int | None, int
     return idx, idx + len(entity_text)
 
 
-def extract(text: str, model: str = "gemini-2.0-flash") -> ExtractionResponse:
+def extract(text: str, model: str = "gemini-3.1-flash-lite-preview") -> ExtractionResponse:
     """Call Gemini API and extract entities, relationships, and triplets."""
     client = get_client()
     prompt = build_prompt(text)
