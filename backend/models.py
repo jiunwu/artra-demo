@@ -6,9 +6,9 @@ ALLOWED_MODELS = [
     "gemini-3-flash-preview",
     "gemini-2.5-pro",
     "gemini-2.5-flash",
-    "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "deepseek-ai/deepseek-r1",
-    "meta/llama-3.3-70b-instruct",
+    "z-ai/glm4-7",
+    "moonshotai/kimi-k2-instruct-0905",
+    "minimaxai/minimax-m2.1",
 ]
 
 NIM_MODELS = {m for m in ALLOWED_MODELS if "/" in m and not m.startswith("gemini")}
