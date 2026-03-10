@@ -87,8 +87,9 @@ EXAMPLE_TEXTS = [
 
 @app.get("/api/health")
 def health():
-    api_key = os.environ.get("GEMINI_API_KEY", "")
-    return {"status": "ok", "gemini_available": bool(api_key)}
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    nvidia_key = os.environ.get("NVIDIA_API_KEY", "")
+    return {"status": "ok", "gemini_available": bool(gemini_key), "nvidia_nim_available": bool(nvidia_key)}
 
 
 @app.get("/api/examples")
