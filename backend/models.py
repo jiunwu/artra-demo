@@ -1,6 +1,12 @@
 from pydantic import BaseModel
 from typing import Optional, List
 
+ALLOWED_MODELS = [
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3-flash-preview",
+    "gemini-2.5-pro",
+]
+
 
 class Entity(BaseModel):
     text: str

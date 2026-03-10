@@ -15,7 +15,7 @@ if env_file.exists():
             key, _, val = line.partition("=")
             os.environ.setdefault(key.strip(), val.strip())
 
-from models import ExtractionRequest, ExtractionResponse
+from models import ExtractionRequest, ExtractionResponse, ALLOWED_MODELS
 import extractor
 
 app = FastAPI(title="ArTra Demo API")
@@ -102,8 +102,11 @@ def extract(request: ExtractionRequest):
         raise HTTPException(status_code=400, detail="Text cannot be empty")
     if len(request.text) > 10000:
         raise HTTPException(status_code=400, detail="Text too long (max 10000 chars)")
+    model = request.model or "gemini-3.1-flash-lite-preview"
+    if model not in ALLOWED_MODELS:
+        raise HTTPException(status_code=400, detail=f"Invalid model. Allowed: {', '.join(ALLOWED_MODELS)}")
     try:
-        return extractor.extract(request.text, model=request.model or "gemini-3.1-flash-lite-preview")
+        return extractor.extract(request.text, model=model)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
