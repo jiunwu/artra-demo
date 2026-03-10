@@ -3,20 +3,32 @@ import json
 import re
 import time
 from google import genai
-from models import Entity, Relationship, Triplet, ExtractionResponse
+from openai import OpenAI
+from models import Entity, Relationship, Triplet, ExtractionResponse, NIM_MODELS
 from prompts import build_prompt
 
-_client: genai.Client | None = None
+_gemini_client: genai.Client | None = None
+_nim_client: OpenAI | None = None
 
 
-def get_client() -> genai.Client:
-    global _client
-    if _client is None:
+def get_gemini_client() -> genai.Client:
+    global _gemini_client
+    if _gemini_client is None:
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable not set")
-        _client = genai.Client(api_key=api_key)
-    return _client
+        _gemini_client = genai.Client(api_key=api_key)
+    return _gemini_client
+
+
+def get_nim_client() -> OpenAI:
+    global _nim_client
+    if _nim_client is None:
+        api_key = os.environ.get("NVIDIA_API_KEY")
+        if not api_key:
+            raise ValueError("NVIDIA_API_KEY environment variable not set")
+        _nim_client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=api_key)
+    return _nim_client
 
 
 def _parse_json(raw: str) -> dict:
@@ -55,16 +67,33 @@ def _find_entity_positions(text: str, entity_text: str) -> tuple[int | None, int
     return idx, idx + len(entity_text)
 
 
+def _call_gemini(prompt: str, model: str) -> str:
+    client = get_gemini_client()
+    response = client.models.generate_content(model=model, contents=prompt)
+    return response.text or ""
+
+
+def _call_nim(prompt: str, model: str) -> str:
+    client = get_nim_client()
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+        max_tokens=4096,
+    )
+    return response.choices[0].message.content or ""
+
+
 def extract(text: str, model: str = "gemini-3.1-flash-lite-preview") -> ExtractionResponse:
-    """Call Gemini API and extract entities, relationships, and triplets."""
-    client = get_client()
+    """Call LLM API and extract entities, relationships, and triplets."""
     prompt = build_prompt(text)
 
     start_ms = time.time()
-    response = client.models.generate_content(model=model, contents=prompt)
+    if model in NIM_MODELS:
+        raw = _call_nim(prompt, model)
+    else:
+        raw = _call_gemini(prompt, model)
     elapsed_ms = int((time.time() - start_ms) * 1000)
-
-    raw = response.text or ""
     data = _parse_json(raw)
 
     # Parse entities, adding position info from original text where missing
