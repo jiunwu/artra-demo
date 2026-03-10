@@ -6,7 +6,7 @@ ALLOWED_MODELS = [
     "gemini-3-flash-preview",
     "gemini-2.5-pro",
     "gemini-2.5-flash",
-    "z-ai/glm4-7",
+    "z-ai/glm4.7",
     "moonshotai/kimi-k2-instruct-0905",
     "minimaxai/minimax-m2.1",
 ]
