@@ -1,16 +1,26 @@
 SYSTEM_PROMPT = """You are a biodiversity literature expert. Extract arthropod traits from taxonomic text.
+The input text may be in any language (e.g., English, Chinese, Spanish). You must comprehend the multilingual input but ALWAYS standardize the extracted `Trait` and `Value` entities into English.
 
 Extract three entity types:
 - Arthropod: taxonomic names (species, genus, family, order) e.g. Drosophila melanogaster, Coleoptera
 - Trait: biological characteristics e.g. body length, habitat, feeding ecology, coloration
 - Value: specific values/descriptions for traits e.g. 5.6 mm, tropical forest, herbivorous
 
+For each entity, you may optionally include:
+- is_novel: boolean (true/false). Set to true ONLY for Arthropod entities if the text indicates it is a newly discovered species (e.g., "sp. nov.", "new species", "新種").
+- ecological_context: string. For habitat or distribution traits/values, infer and provide basic macroecological variables (e.g., "Tropical rainforest", "Temperate climate", "Alpine biome").
+
 And produce triplets in the form: {arthropod, trait, value}
 
 Return ONLY valid JSON with this exact structure:
 {
   "entities": [
-    {"text": "...", "type": "Arthropod|Trait|Value"}
+    {
+      "text": "...", 
+      "type": "Arthropod|Trait|Value",
+      "is_novel": true,
+      "ecological_context": "..."
+    }
   ],
   "relationships": [
     {"subject": "...", "predicate": "hasTrait|hasValue", "object": "..."}
@@ -30,8 +40,8 @@ FEW_SHOT_EXAMPLES = [
     {"text": "Culicidae", "type": "Arthropod"},
     {"text": "body length", "type": "Trait"},
     {"text": "4–7 mm", "type": "Value"},
-    {"text": "habitat", "type": "Trait"},
-    {"text": "tropical urban areas", "type": "Value"},
+    {"text": "habitat", "type": "Trait", "ecological_context": "Tropical/Urban"},
+    {"text": "tropical urban areas", "type": "Value", "ecological_context": "Tropical/Urban"},
     {"text": "distribution", "type": "Trait"},
     {"text": "worldwide", "type": "Value"},
     {"text": "feeding ecology", "type": "Trait"},
@@ -61,24 +71,20 @@ FEW_SHOT_EXAMPLES = [
 }"""
     },
     {
-        "input": "The spider Argiope bruennichi (Araneae, Araneidae) constructs orb webs in grassland habitats across Europe and Asia. Females have a body length of 15–25 mm with distinctive yellow and black banding on the abdomen. Males are significantly smaller at 4–6 mm.",
+        "input": "The new species, Argiope bruennichi sp. nov. (Araneae, Araneidae), constructs orb webs in grassland habitats across Europe and Asia. Females have a body length of 15–25 mm.",
         "output": """{
   "entities": [
-    {"text": "Argiope bruennichi", "type": "Arthropod"},
+    {"text": "Argiope bruennichi", "type": "Arthropod", "is_novel": true},
     {"text": "Araneae", "type": "Arthropod"},
     {"text": "Araneidae", "type": "Arthropod"},
     {"text": "web type", "type": "Trait"},
     {"text": "orb webs", "type": "Value"},
-    {"text": "habitat", "type": "Trait"},
-    {"text": "grassland", "type": "Value"},
+    {"text": "habitat", "type": "Trait", "ecological_context": "Temperate grassland"},
+    {"text": "grassland", "type": "Value", "ecological_context": "Temperate grassland"},
     {"text": "distribution", "type": "Trait"},
     {"text": "Europe and Asia", "type": "Value"},
     {"text": "body length (female)", "type": "Trait"},
-    {"text": "15–25 mm", "type": "Value"},
-    {"text": "coloration", "type": "Trait"},
-    {"text": "yellow and black banding on the abdomen", "type": "Value"},
-    {"text": "body length (male)", "type": "Trait"},
-    {"text": "4–6 mm", "type": "Value"}
+    {"text": "15–25 mm", "type": "Value"}
   ],
   "relationships": [
     {"subject": "Argiope bruennichi", "predicate": "hasTrait", "object": "web type"},
@@ -88,19 +94,35 @@ FEW_SHOT_EXAMPLES = [
     {"subject": "Argiope bruennichi", "predicate": "hasTrait", "object": "distribution"},
     {"subject": "distribution", "predicate": "hasValue", "object": "Europe and Asia"},
     {"subject": "Argiope bruennichi", "predicate": "hasTrait", "object": "body length (female)"},
-    {"subject": "body length (female)", "predicate": "hasValue", "object": "15–25 mm"},
-    {"subject": "Argiope bruennichi", "predicate": "hasTrait", "object": "coloration"},
-    {"subject": "coloration", "predicate": "hasValue", "object": "yellow and black banding on the abdomen"},
-    {"subject": "Argiope bruennichi", "predicate": "hasTrait", "object": "body length (male)"},
-    {"subject": "body length (male)", "predicate": "hasValue", "object": "4–6 mm"}
+    {"subject": "body length (female)", "predicate": "hasValue", "object": "15–25 mm"}
   ],
   "triplets": [
     {"arthropod": "Argiope bruennichi", "trait": "web type", "value": "orb webs"},
     {"arthropod": "Argiope bruennichi", "trait": "habitat", "value": "grassland"},
     {"arthropod": "Argiope bruennichi", "trait": "distribution", "value": "Europe and Asia"},
-    {"arthropod": "Argiope bruennichi", "trait": "body length (female)", "value": "15–25 mm"},
-    {"arthropod": "Argiope bruennichi", "trait": "coloration", "value": "yellow and black banding on the abdomen"},
-    {"arthropod": "Argiope bruennichi", "trait": "body length (male)", "value": "4–6 mm"}
+    {"arthropod": "Argiope bruennichi", "trait": "body length (female)", "value": "15–25 mm"}
+  ]
+}"""
+    },
+    {
+        "input": "新種 Pachybrachis sassii sp. nov. 的體長為 5.6 mm，主要棲息於地中海氣候的灌木叢中。",
+        "output": """{
+  "entities": [
+    {"text": "Pachybrachis sassii", "type": "Arthropod", "is_novel": true},
+    {"text": "body length", "type": "Trait"},
+    {"text": "5.6 mm", "type": "Value"},
+    {"text": "habitat", "type": "Trait", "ecological_context": "Mediterranean shrubland"},
+    {"text": "shrubland", "type": "Value", "ecological_context": "Mediterranean shrubland"}
+  ],
+  "relationships": [
+    {"subject": "Pachybrachis sassii", "predicate": "hasTrait", "object": "body length"},
+    {"subject": "body length", "predicate": "hasValue", "object": "5.6 mm"},
+    {"subject": "Pachybrachis sassii", "predicate": "hasTrait", "object": "habitat"},
+    {"subject": "habitat", "predicate": "hasValue", "object": "shrubland"}
+  ],
+  "triplets": [
+    {"arthropod": "Pachybrachis sassii", "trait": "body length", "value": "5.6 mm"},
+    {"arthropod": "Pachybrachis sassii", "trait": "habitat", "value": "shrubland"}
   ]
 }"""
     }

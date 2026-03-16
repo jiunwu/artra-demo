@@ -93,6 +93,33 @@ Remarks. This species was previously confused with C. pennsylvanicus from North 
 
 ---
 
+## Example 4: Multilingual Extraction (Chinese)
+
+**Source style**: Species description in Chinese
+
+```
+新種 Pachybrachis sassii sp. nov. 的體長為 5.6 mm，主要棲息於地中海氣候的灌木叢中。
+```
+
+**Expected extraction**:
+```json
+{
+  "entities": [
+    {"text": "Pachybrachis sassii", "type": "Arthropod", "is_novel": true},
+    {"text": "body length", "type": "Trait"},
+    {"text": "5.6 mm", "type": "Value"},
+    {"text": "habitat", "type": "Trait", "ecological_context": "Mediterranean shrubland"},
+    {"text": "shrubland", "type": "Value", "ecological_context": "Mediterranean shrubland"}
+  ],
+  "triplets": [
+    {"arthropod": "Pachybrachis sassii", "trait": "body length", "value": "5.6 mm"},
+    {"arthropod": "Pachybrachis sassii", "trait": "habitat", "value": "shrubland"}
+  ]
+}
+```
+
+---
+
 ## Few-shot Prompt Examples（供 prompts.py 使用）
 
 ### Mini Example A（用於 prompt 內的 few-shot）

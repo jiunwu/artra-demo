@@ -20,6 +20,8 @@ class Entity(BaseModel):
     start: Optional[int] = None
     end: Optional[int] = None
     confidence: Optional[float] = None
+    is_novel: Optional[bool] = None
+    ecological_context: Optional[str] = None
 
 
 class Relationship(BaseModel):

@@ -82,6 +82,14 @@ EXAMPLE_TEXTS = [
             "mountain locations around Competa and Canillas de Albaida."
         ),
     },
+    {
+        "id": 4,
+        "title": "Multilingual Extraction (Chinese)",
+        "source": "Mock Data",
+        "text": (
+            "新種 Pachybrachis sassii sp. nov. 的體長為 5.6 mm，主要棲息於地中海氣候的灌木叢中。"
+        ),
+    },
 ]
 
 

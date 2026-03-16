@@ -110,6 +110,8 @@ def extract(text: str, model: str = "gemini-3.1-flash-lite-preview") -> Extracti
             start=start,
             end=end,
             confidence=e.get("confidence"),
+            is_novel=e.get("is_novel"),
+            ecological_context=e.get("ecological_context"),
         ))
 
     relationships = [

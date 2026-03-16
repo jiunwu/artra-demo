@@ -735,10 +735,20 @@ Tip: press Ctrl+Enter to extract."></textarea>
       const conf = confLookup[t.trait.toLowerCase()];
       const confText = conf != null ? conf.toFixed(2) : "—";
       const cls = conf != null ? confClass(conf) : "";
+      
+      const arthropodEntity = (data.entities || []).find(e => e.type === "Arthropod" && e.text === t.arthropod);
+      const isNovel = arthropodEntity && arthropodEntity.is_novel;
+      const novelBadge = isNovel ? ' <span title="Novel Species" style="font-size:0.8em">🌟</span>' : '';
+
+      const traitEntity = (data.entities || []).find(e => e.type === "Trait" && e.text === t.trait);
+      const valueEntity = (data.entities || []).find(e => e.type === "Value" && e.text === t.value);
+      const ecoContext = (traitEntity && traitEntity.ecological_context) || (valueEntity && valueEntity.ecological_context);
+      const ecoBadge = ecoContext ? ` <span title="Eco-Context: ${escapeHtml(ecoContext)}" style="cursor:help;font-size:0.8em">🌍</span>` : '';
+
       const tr = document.createElement("tr");
       tr.innerHTML =
-        `<td><em>${escapeHtml(t.arthropod)}</em></td>` +
-        `<td>${escapeHtml(t.trait)}</td>` +
+        `<td><em>${escapeHtml(t.arthropod)}</em>${novelBadge}</td>` +
+        `<td>${escapeHtml(t.trait)}${ecoBadge}</td>` +
         `<td>${escapeHtml(t.value)}</td>` +
         `<td><span class="conf-badge ${cls}">${confText}</span></td>`;
       tbody.appendChild(tr);
