@@ -115,6 +115,15 @@ def mine_pmc():
         raise HTTPException(status_code=500, detail=f"Failed to mine PMC text: {str(e)}")
 
 
+@app.get("/api/pmc/search")
+def search_pmc(term: str, limit: int = 10):
+    try:
+        result = pmc.search_pmc(term, limit)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to search PMC: {str(e)}")
+
+
 @app.post("/api/extract", response_model=ExtractionResponse)
 def extract(request: ExtractionRequest):
     if not request.text.strip():
