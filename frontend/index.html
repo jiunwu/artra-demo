@@ -222,6 +222,36 @@
       flex-wrap: wrap;
       gap: 0.5rem;
     }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid #dee2e6; }
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #6c757d;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #1a3c6e; }
+    .tab-btn.active { color: #1a3c6e; border-bottom-color: #1a3c6e; }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* PMC Miner */
+    .pmc-search-bar { display: flex; gap: 0.75rem; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
+    .pmc-input { flex: 1; min-width: 200px; padding: 0.5rem 0.75rem; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9rem; }
+    .pmc-number { width: 80px; padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9rem; }
+    .pmc-result {
+      border: 1px solid #e9ecef; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; background: #fafafa;
+    }
+    .pmc-result-title { font-weight: 600; font-size: 1rem; color: #1a3c6e; margin-bottom: 0.25rem; }
+    .pmc-result-source { font-size: 0.8rem; color: #666; margin-bottom: 0.5rem; }
+    .pmc-result-text { font-size: 0.88rem; color: #333; line-height: 1.5; margin-bottom: 0.75rem; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
   </style>
 </head>
 <body>
@@ -247,12 +277,23 @@
 
 <div class="container">
 
-  <!-- Input Card -->
-  <div class="card">
-    <h2 data-i18n="inputText">Input Text</h2>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('extractor')" data-i18n="extractorTab">Trait Extractor</button>
+    <button class="tab-btn" onclick="switchTab('miner')" data-i18n="minerTab">PMC Miner</button>
+  </div>
+
+  <!-- TRAIT EXTRACTOR TAB -->
+  <div id="extractorTab" class="tab-pane active">
+
+    <!-- Input Card -->
+    <div class="card">
+      <h2 data-i18n="inputText">Input Text</h2>
     <div class="examples-row">
       <span class="examples-label" data-i18n="loadExample">Load example:</span>
       <div id="examplesRow" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
+      <button class="example-btn" id="minePmcBtn" onclick="doMinePmc()" style="margin-left:auto;background:#e2e8f0;border-color:#cbd5e1;font-weight:600;">
+        <span id="minePmcLabel">🔍 Mine from PMC</span>
+      </button>
     </div>
     <textarea id="inputText" data-i18n-placeholder="placeholder" placeholder="Paste taxonomic text here (English, 20–5000 characters)...
 Tip: press Ctrl+Enter to extract."></textarea>
@@ -343,11 +384,42 @@ Tip: press Ctrl+Enter to extract."></textarea>
       </table>
     </div>
 
-  </div>
+    </div>
+
+  </div> <!-- End Extractor Tab -->
+
+  <!-- PMC MINER TAB -->
+  <div id="minerTab" class="tab-pane">
+    <div class="card">
+      <h2 data-i18n="searchPmc">Search PubMed Central</h2>
+      <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;" data-i18n="searchPmcDesc">Search the PMC Open Access subset for papers containing specific keywords.</p>
+
+      <div class="pmc-search-bar">
+        <input type="text" id="pmcSearchTerm" class="pmc-input" value="arthropod taxonomy trait" placeholder="Search terms (e.g., 'arthropod taxonomy trait')">
+        <label for="pmcSearchLimit" style="font-size:0.85rem;color:#555;" data-i18n="limit">Limit:</label>
+        <input type="number" id="pmcSearchLimit" class="pmc-number" value="10" min="1" max="50">
+        <button class="extract-btn" id="pmcSearchBtn" onclick="doPmcSearch()">
+          <span id="pmcSearchLabel" data-i18n="searchBtn">🔍 Search</span>
+        </button>
+      </div>
+
+      <div id="pmcMinerError" class="error-msg"></div>
+
+      <div id="pmcResultsContainer"></div>
+    </div>
+  </div> <!-- End Miner Tab -->
+
 </div>
 
 <script>
   const API_BASE = "";
+
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId + 'Tab').classList.add('active');
+    document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+  }
 
   // ── i18n Translations ─────────────────────────────────────────────────
   const i18n = {
@@ -360,6 +432,14 @@ Tip: press Ctrl+Enter to extract."></textarea>
       extractBtn: "Extract Traits",
       extracting: "Extracting...",
       annotatedText: "Annotated Text",
+      extractorTab: "Trait Extractor",
+      minerTab: "PMC Miner",
+      searchPmc: "Search PubMed Central",
+      searchPmcDesc: "Search the PMC Open Access subset for papers containing specific keywords.",
+      limit: "Limit:",
+      searchBtn: "🔍 Search",
+      searching: "Searching...",
+      extractThis: "Extract Traits",
       arthropod: "Arthropod",
       trait: "Trait",
       value: "Value",
@@ -403,6 +483,14 @@ Tip: press Ctrl+Enter to extract."></textarea>
       extractBtn: "抽取特徵",
       extracting: "抽取中...",
       annotatedText: "標註文本",
+      extractorTab: "特徵抽取器",
+      minerTab: "PMC 礦工",
+      searchPmc: "搜尋 PubMed Central",
+      searchPmcDesc: "搜尋包含特定關鍵字的 PMC Open Access 論文。",
+      limit: "數量：",
+      searchBtn: "🔍 搜尋",
+      searching: "搜尋中...",
+      extractThis: "抽取此文",
       arthropod: "節肢動物",
       trait: "特徵",
       value: "數值",
@@ -627,6 +715,101 @@ Tip: press Ctrl+Enter to extract."></textarea>
         row.appendChild(btn);
       });
     } catch (_) { /* backend not running yet */ }
+  }
+
+  async function doMinePmc() {
+    const btn = document.getElementById("minePmcBtn");
+    const label = document.getElementById("minePmcLabel");
+    const originalText = label.textContent;
+    btn.disabled = true;
+    label.textContent = "Mining...";
+    hideError();
+
+    try {
+      const res = await fetch(`${API_BASE}/api/pmc/mine`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${res.status}`);
+      }
+      const data = await res.json();
+      document.getElementById("inputText").value = `[${data.source}] ${data.title}\n\n${data.text}`;
+      updateCharCount();
+    } catch (e) {
+      showError("Failed to mine PMC text: " + e.message);
+    } finally {
+      btn.disabled = false;
+      label.textContent = originalText;
+    }
+  }
+
+  async function doPmcSearch() {
+    const term = document.getElementById("pmcSearchTerm").value.trim();
+    const limit = document.getElementById("pmcSearchLimit").value;
+    const btn = document.getElementById("pmcSearchBtn");
+    const label = document.getElementById("pmcSearchLabel");
+    const errorEl = document.getElementById("pmcMinerError");
+    const container = document.getElementById("pmcResultsContainer");
+
+    if (!term) return;
+
+    errorEl.style.display = "none";
+    container.innerHTML = "";
+    btn.disabled = true;
+    const originalText = label.textContent;
+    label.textContent = t("searching") || "Searching...";
+
+    try {
+      const res = await fetch(`${API_BASE}/api/pmc/search?term=${encodeURIComponent(term)}&limit=${limit}`);
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const data = await res.json();
+
+      if (!data || data.length === 0) {
+        container.innerHTML = `<p style="color:#666;font-style:italic;">No results found.</p>`;
+        return;
+      }
+
+      data.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "pmc-result";
+
+        const title = document.createElement("div");
+        title.className = "pmc-result-title";
+        title.textContent = item.title;
+
+        const source = document.createElement("div");
+        source.className = "pmc-result-source";
+        source.innerHTML = `<a href="https://pmc.ncbi.nlm.nih.gov/articles/${item.source}/" target="_blank" style="color:#1a3c6e;text-decoration:none;">${item.source}</a>`;
+
+        const text = document.createElement("div");
+        text.className = "pmc-result-text";
+        text.textContent = item.text;
+
+        const extractBtn = document.createElement("button");
+        extractBtn.className = "example-btn";
+        extractBtn.style.background = "#1a3c6e";
+        extractBtn.style.color = "white";
+        extractBtn.style.border = "none";
+        extractBtn.textContent = t("extractThis") || "Extract Traits";
+        extractBtn.onclick = () => {
+          document.getElementById("inputText").value = `[${item.source}] ${item.title}\n\n${item.text}`;
+          updateCharCount();
+          switchTab('extractor');
+          doExtract();
+        };
+
+        div.appendChild(title);
+        div.appendChild(source);
+        div.appendChild(text);
+        div.appendChild(extractBtn);
+        container.appendChild(div);
+      });
+    } catch (e) {
+      errorEl.textContent = "Search failed: " + e.message;
+      errorEl.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      label.textContent = originalText;
+    }
   }
 
   function updateCharCount() {
