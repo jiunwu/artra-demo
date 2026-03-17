@@ -253,6 +253,9 @@
     <div class="examples-row">
       <span class="examples-label" data-i18n="loadExample">Load example:</span>
       <div id="examplesRow" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
+      <button class="example-btn" id="minePmcBtn" onclick="doMinePmc()" style="margin-left:auto;background:#e2e8f0;border-color:#cbd5e1;font-weight:600;">
+        <span id="minePmcLabel">🔍 Mine from PMC</span>
+      </button>
     </div>
     <textarea id="inputText" data-i18n-placeholder="placeholder" placeholder="Paste taxonomic text here (English, 20–5000 characters)...
 Tip: press Ctrl+Enter to extract."></textarea>
@@ -627,6 +630,31 @@ Tip: press Ctrl+Enter to extract."></textarea>
         row.appendChild(btn);
       });
     } catch (_) { /* backend not running yet */ }
+  }
+
+  async function doMinePmc() {
+    const btn = document.getElementById("minePmcBtn");
+    const label = document.getElementById("minePmcLabel");
+    const originalText = label.textContent;
+    btn.disabled = true;
+    label.textContent = "Mining...";
+    hideError();
+
+    try {
+      const res = await fetch(`${API_BASE}/api/pmc/mine`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${res.status}`);
+      }
+      const data = await res.json();
+      document.getElementById("inputText").value = `[${data.source}] ${data.title}\n\n${data.text}`;
+      updateCharCount();
+    } catch (e) {
+      showError("Failed to mine PMC text: " + e.message);
+    } finally {
+      btn.disabled = false;
+      label.textContent = originalText;
+    }
   }
 
   function updateCharCount() {

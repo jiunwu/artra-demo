@@ -17,6 +17,7 @@ if env_file.exists():
 
 from models import ExtractionRequest, ExtractionResponse, ALLOWED_MODELS
 import extractor
+import pmc
 
 app = FastAPI(title="ArTra Demo API")
 
@@ -103,6 +104,15 @@ def health():
 @app.get("/api/examples")
 def examples():
     return EXAMPLE_TEXTS
+
+
+@app.get("/api/pmc/mine")
+def mine_pmc():
+    try:
+        result = pmc.mine_pmc_text()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to mine PMC text: {str(e)}")
 
 
 @app.post("/api/extract", response_model=ExtractionResponse)
