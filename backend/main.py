@@ -15,9 +15,17 @@ if env_file.exists():
             key, _, val = line.partition("=")
             os.environ.setdefault(key.strip(), val.strip())
 
+import json
 from models import ExtractionRequest, ExtractionResponse, ALLOWED_MODELS
 import extractor
 import pmc
+
+# Import metrics calculation if available
+try:
+    sys.path.append(str(Path(__file__).parent.parent / "scripts"))
+    import calculate_metrics
+except ImportError:
+    calculate_metrics = None
 
 app = FastAPI(title="ArTra Demo API")
 
@@ -122,6 +130,47 @@ def search_pmc(term: str, limit: int = 10):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to search PMC: {str(e)}")
+
+
+@app.get("/api/evaluation/metrics")
+def get_evaluation_metrics():
+    """Returns the pre-calculated offline evaluation metrics from scripts/predictions.jsonl."""
+    if not calculate_metrics:
+        raise HTTPException(status_code=500, detail="Metrics module not found.")
+
+    predictions_file = Path(__file__).parent.parent / "scripts" / "predictions.jsonl"
+    if not predictions_file.exists():
+        return {"status": "pending", "message": "Offline evaluation has not been run yet. Execute scripts/run_inference.py to generate predictions."}
+
+    try:
+        total_ner, total_re, total_triplets = calculate_metrics.calculate_all_metrics(str(predictions_file))
+
+        # Calculate F1s
+        ner_f1_sum = sum(calculate_metrics.calculate_precision_recall_f1(counts["tp"], counts["fp"], counts["fn"])[2] for counts in total_ner.values())
+        re_f1_sum = sum(calculate_metrics.calculate_precision_recall_f1(counts["tp"], counts["fp"], counts["fn"])[2] for counts in total_re.values())
+
+        macro_ner_f1 = ner_f1_sum / max(1, len(total_ner))
+        macro_re_f1 = re_f1_sum / max(1, len(total_re))
+
+        # Detailed metrics
+        ner_details = {k: calculate_metrics.calculate_precision_recall_f1(v["tp"], v["fp"], v["fn"])[2] for k, v in total_ner.items()}
+        re_details = {k: calculate_metrics.calculate_precision_recall_f1(v["tp"], v["fp"], v["fn"])[2] for k, v in total_re.items()}
+
+        return {
+            "status": "success",
+            "metrics": {
+                "ner": {
+                    "macro_f1": round(macro_ner_f1, 2),
+                    "details": {k: round(v, 2) for k, v in ner_details.items()}
+                },
+                "re": {
+                    "macro_f1": round(macro_re_f1, 2),
+                    "details": {k: round(v, 2) for k, v in re_details.items()}
+                }
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to calculate metrics: {str(e)}")
 
 
 @app.post("/api/extract", response_model=ExtractionResponse)

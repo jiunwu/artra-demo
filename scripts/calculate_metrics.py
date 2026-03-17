@@ -100,7 +100,7 @@ def evaluate_triplets(ground_truth: List[Dict], prediction: List[Dict]) -> Dict:
 def calculate_all_metrics(predictions_file="scripts/predictions.jsonl"):
     if not os.path.exists(predictions_file):
         print(f"Predictions file {predictions_file} not found. Run run_inference.py first.")
-        return
+        return None, None, None
 
     total_ner = {
         "Arthropod": {"tp": 0, "fp": 0, "fn": 0},
@@ -170,6 +170,8 @@ def calculate_all_metrics(predictions_file="scripts/predictions.jsonl"):
     p, r, f1 = calculate_precision_recall_f1(total_triplets["tp"], total_triplets["fp"], total_triplets["fn"])
     print(f"{p:<10.2f} | {r:<10.2f} | {f1:<10.2f}")
     print("\n")
+
+    return total_ner, total_re, total_triplets
 
 if __name__ == "__main__":
     calculate_all_metrics()

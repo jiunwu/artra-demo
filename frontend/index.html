@@ -376,9 +376,11 @@ Tip: press Ctrl+Enter to extract."></textarea>
           <tr><td data-i18n="trainingData">Training data</td><td data-i18n="trainingDataOriginal">25 manually annotated docs</td><td data-i18n="trainingDataDemo">0 (few-shot only)</td></tr>
           <tr><td data-i18n="nerMethod">NER method</td><td>Fine-tuned BioBERT</td><td>Few-shot Gemini</td></tr>
           <tr><td data-i18n="reMethod">RE method</td><td>Fine-tuned LUKE</td><td>Few-shot Gemini</td></tr>
-          <tr><td>NER F1 Arthropod</td><td>0.78</td><td data-i18n="notMeasured">Not measured</td></tr>
-          <tr><td>NER F1 Trait</td><td>0.55</td><td data-i18n="notMeasured">Not measured</td></tr>
-          <tr><td>RE F1 (macro avg)</td><td>0.65</td><td data-i18n="notMeasured">Not measured</td></tr>
+          <tr><td>NER F1 Arthropod</td><td>0.78</td><td id="f1-ner-arthropod" data-i18n="notMeasured">See scripts/calculate_metrics.py</td></tr>
+          <tr><td>NER F1 Trait</td><td>0.56</td><td id="f1-ner-trait" data-i18n="notMeasured">See scripts/calculate_metrics.py</td></tr>
+          <tr><td>NER F1 Value</td><td>0.44</td><td id="f1-ner-value" data-i18n="notMeasured">See scripts/calculate_metrics.py</td></tr>
+          <tr><td>RE F1 hasTrait</td><td>0.55</td><td id="f1-re-hastrait" data-i18n="notMeasured">See scripts/calculate_metrics.py</td></tr>
+          <tr><td>RE F1 hasValue</td><td>0.64</td><td id="f1-re-hasvalue" data-i18n="notMeasured">See scripts/calculate_metrics.py</td></tr>
           <tr><td data-i18n="deployment">Deployment</td><td data-i18n="deploymentOriginal">GPU + training pipeline</td><td data-i18n="deploymentDemo">API key only</td></tr>
         </tbody>
       </table>
@@ -421,6 +423,52 @@ Tip: press Ctrl+Enter to extract."></textarea>
     document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
   }
 
+  // ── Fetch Evaluation Metrics ───────────────────────────────────────────
+  async function fetchEvaluationMetrics() {
+    try {
+      const res = await fetch(`${API_BASE}/api/evaluation/metrics`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (data.status === "success" && data.metrics) {
+        const { ner, re } = data.metrics;
+
+        // Remove data-i18n so it doesn't get overwritten by localization
+        const elNerArthropod = document.getElementById("f1-ner-arthropod");
+        if(ner.details.Arthropod !== undefined) {
+           elNerArthropod.textContent = ner.details.Arthropod.toFixed(2);
+           elNerArthropod.removeAttribute("data-i18n");
+        }
+
+        const elNerTrait = document.getElementById("f1-ner-trait");
+        if(ner.details.Trait !== undefined) {
+           elNerTrait.textContent = ner.details.Trait.toFixed(2);
+           elNerTrait.removeAttribute("data-i18n");
+        }
+
+        const elNerValue = document.getElementById("f1-ner-value");
+        if(ner.details.Value !== undefined) {
+           elNerValue.textContent = ner.details.Value.toFixed(2);
+           elNerValue.removeAttribute("data-i18n");
+        }
+
+        const elReHasTrait = document.getElementById("f1-re-hastrait");
+        if(re.details.hasTrait !== undefined) {
+           elReHasTrait.textContent = re.details.hasTrait.toFixed(2);
+           elReHasTrait.removeAttribute("data-i18n");
+        }
+
+        const elReHasValue = document.getElementById("f1-re-hasvalue");
+        if(re.details.hasValue !== undefined) {
+           elReHasValue.textContent = re.details.hasValue.toFixed(2);
+           elReHasValue.removeAttribute("data-i18n");
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch evaluation metrics:", e);
+    }
+  }
+
   // ── i18n Translations ─────────────────────────────────────────────────
   const i18n = {
     en: {
@@ -459,7 +507,7 @@ Tip: press Ctrl+Enter to extract."></textarea>
       trainingDataDemo: "0 (few-shot only)",
       nerMethod: "NER method",
       reMethod: "RE method",
-      notMeasured: "Not measured",
+      notMeasured: "See scripts/calculate_metrics.py",
       deployment: "Deployment",
       deploymentOriginal: "GPU + training pipeline",
       deploymentDemo: "API key only",
@@ -510,7 +558,7 @@ Tip: press Ctrl+Enter to extract."></textarea>
       trainingDataDemo: "0（僅 few-shot）",
       nerMethod: "NER 方法",
       reMethod: "RE 方法",
-      notMeasured: "未測量",
+      notMeasured: "詳見 scripts/calculate_metrics.py",
       deployment: "部署方式",
       deploymentOriginal: "GPU + 訓練流程",
       deploymentDemo: "僅需 API 金鑰",
@@ -553,7 +601,7 @@ Tip: press Ctrl+Enter to extract."></textarea>
       trainingDataDemo: "0 (solo few-shot)",
       nerMethod: "Metodo NER",
       reMethod: "Metodo RE",
-      notMeasured: "Non misurato",
+      notMeasured: "Vedi scripts/calculate_metrics.py",
       deployment: "Distribuzione",
       deploymentOriginal: "GPU + pipeline di addestramento",
       deploymentDemo: "Solo chiave API",
@@ -596,7 +644,7 @@ Tip: press Ctrl+Enter to extract."></textarea>
       trainingDataDemo: "0 (nur Few-shot)",
       nerMethod: "NER-Methode",
       reMethod: "RE-Methode",
-      notMeasured: "Nicht gemessen",
+      notMeasured: "Siehe scripts/calculate_metrics.py",
       deployment: "Bereitstellung",
       deploymentOriginal: "GPU + Trainings-Pipeline",
       deploymentDemo: "Nur API-Schlüssel",
@@ -639,7 +687,7 @@ Tip: press Ctrl+Enter to extract."></textarea>
       trainingDataDemo: "0 (few-shot uniquement)",
       nerMethod: "Méthode NER",
       reMethod: "Méthode RE",
-      notMeasured: "Non mesuré",
+      notMeasured: "Voir scripts/calculate_metrics.py",
       deployment: "Déploiement",
       deploymentOriginal: "GPU + pipeline d'entraînement",
       deploymentDemo: "Clé API uniquement",
@@ -1055,6 +1103,7 @@ Tip: press Ctrl+Enter to extract."></textarea>
   }
 
   loadExamples();
+  fetchEvaluationMetrics();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 </body>
