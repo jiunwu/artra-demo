@@ -13,6 +13,14 @@ from models import ExtractionRequest, ExtractionResponse, ALLOWED_MODELS
 import extractor
 import pmc
 
+# Import metrics calculation if available
+try:
+    sys.path.append(str(Path(__file__).parent.parent / "scripts"))
+    import calculate_metrics
+except ImportError:
+    calculate_metrics = None
+
+
 app = FastAPI(title="ArTra Demo API")
 
 app.add_middleware(
@@ -116,6 +124,68 @@ def search_pmc(term: str, limit: int = 10):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to search PMC: {str(e)}")
 
+
+
+
+@app.get("/api/evaluation/metrics")
+def get_evaluation_metrics():
+    """Calculates evaluation metrics. If no API key is present, returns unavailable."""
+    import os
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    nvidia_key = os.environ.get("NVIDIA_API_KEY", "")
+
+    if not gemini_key and not nvidia_key:
+        return {"status": "unavailable", "message": "No API keys configured"}
+
+    if not calculate_metrics:
+        raise HTTPException(status_code=500, detail="Metrics module not found.")
+
+    predictions_file = Path("/tmp/predictions.jsonl")
+
+    # If no predictions exist, we could run inference, but doing it synchronously in the API could timeout.
+    # We will just return unavailable or calculate if it exists.
+    # Actually, the user asked: "Now, if API key is not used, show “unavailable” otherwise shows the score"
+    if not predictions_file.exists():
+        # Let's run inference dynamically if not exists!
+        try:
+            sys.path.append(str(Path(__file__).parent.parent / "scripts"))
+            import run_inference
+            run_inference.run_inference(input_file=str(Path(__file__).parent.parent / "scripts" / "evaluation_set.jsonl"), output_file=str(predictions_file))
+        except Exception as e:
+            return {"status": "unavailable", "message": f"Inference failed: {str(e)}"}
+
+    if not predictions_file.exists():
+        return {"status": "unavailable", "message": "Predictions file missing after inference"}
+
+    try:
+        total_ner, total_re, total_triplets = calculate_metrics.calculate_all_metrics(str(predictions_file))
+
+        # Calculate F1s
+        ner_f1_sum = sum(calculate_metrics.calculate_precision_recall_f1(counts["tp"], counts["fp"], counts["fn"])[2] for counts in total_ner.values())
+        re_f1_sum = sum(calculate_metrics.calculate_precision_recall_f1(counts["tp"], counts["fp"], counts["fn"])[2] for counts in total_re.values())
+
+        macro_ner_f1 = ner_f1_sum / max(1, len(total_ner))
+        macro_re_f1 = re_f1_sum / max(1, len(total_re))
+
+        # Detailed metrics
+        ner_details = {k: calculate_metrics.calculate_precision_recall_f1(v["tp"], v["fp"], v["fn"])[2] for k, v in total_ner.items()}
+        re_details = {k: calculate_metrics.calculate_precision_recall_f1(v["tp"], v["fp"], v["fn"])[2] for k, v in total_re.items()}
+
+        return {
+            "status": "success",
+            "metrics": {
+                "ner": {
+                    "macro_f1": round(macro_ner_f1, 2),
+                    "details": {k: round(v, 2) for k, v in ner_details.items()}
+                },
+                "re": {
+                    "macro_f1": round(macro_re_f1, 2),
+                    "details": {k: round(v, 2) for k, v in re_details.items()}
+                }
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to calculate metrics: {str(e)}")
 
 @app.post("/api/extract", response_model=ExtractionResponse)
 def extract(request: ExtractionRequest):
