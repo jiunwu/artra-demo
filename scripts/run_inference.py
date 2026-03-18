@@ -14,48 +14,55 @@ def run_inference(input_file="scripts/evaluation_set.jsonl", output_file="script
 
     predictions = []
 
+
     with open(input_file, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    for i, line in enumerate(lines):
+    import concurrent.futures
+
+    def process_line(i, line):
         data = json.loads(line)
         text = data["text"]
-        print(f"Processing example {i+1}/{len(lines)}...")
-
         try:
-            # We are using few-shot via Gemini
             result = extract(text)
-
-            # Convert objects to dicts for JSON serialization
             pred_entities = [e.dict() for e in result.entities]
             pred_relationships = [r.dict() for r in result.relationships]
             pred_triplets = [t.dict() for t in result.triplets]
-
-            predictions.append({
-                "text": text,
-                "ground_truth": data["ground_truth"],
-                "prediction": {
-                    "entities": pred_entities,
-                    "relationships": pred_relationships,
-                    "triplets": pred_triplets,
-                    "processing_time_ms": result.processing_time_ms,
-                    "model_used": result.model_used
+            return {
+                "idx": i,
+                "data": {
+                    "text": text,
+                    "ground_truth": data["ground_truth"],
+                    "prediction": {
+                        "entities": pred_entities,
+                        "relationships": pred_relationships,
+                        "triplets": pred_triplets,
+                        "processing_time_ms": result.processing_time_ms,
+                        "model_used": result.model_used
+                    }
                 }
-            })
-            print(f"  Extracted {len(pred_triplets)} triplets.")
+            }
         except Exception as e:
-            print(f"Error processing example {i+1}: {e}")
-            # Add an empty prediction to keep alignment
-            predictions.append({
-                "text": text,
-                "ground_truth": data["ground_truth"],
-                "prediction": {
-                    "entities": [],
-                    "relationships": [],
-                    "triplets": [],
-                    "error": str(e)
+            return {
+                "idx": i,
+                "data": {
+                    "text": text,
+                    "ground_truth": data["ground_truth"],
+                    "prediction": {
+                        "entities": [],
+                        "relationships": [],
+                        "triplets": [],
+                        "error": str(e)
+                    }
                 }
-            })
+            }
+
+    predictions = [None] * len(lines)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [executor.submit(process_line, i, line) for i, line in enumerate(lines)]
+        for future in concurrent.futures.as_completed(futures):
+            res = future.result()
+            predictions[res["idx"]] = res["data"]
 
     with open(output_file, "w", encoding="utf-8") as f:
         for item in predictions:

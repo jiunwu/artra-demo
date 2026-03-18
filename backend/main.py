@@ -146,7 +146,7 @@ def get_evaluation_metrics():
     if not calculate_metrics:
         raise HTTPException(status_code=500, detail="Metrics module not found.")
 
-    predictions_file = Path(__file__).parent.parent / "scripts" / "predictions.jsonl"
+    predictions_file = Path("/tmp/predictions.jsonl")
 
     # If no predictions exist, we could run inference, but doing it synchronously in the API could timeout.
     # We will just return unavailable or calculate if it exists.
