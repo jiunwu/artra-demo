@@ -430,7 +430,21 @@ Tip: press Ctrl+Enter to extract."></textarea>
       if (!res.ok) return;
       const data = await res.json();
 
+
+      if (data.status === "unavailable") {
+        const els = ["f1-ner-arthropod", "f1-ner-trait", "f1-ner-value", "f1-re-hastrait", "f1-re-hasvalue"];
+        els.forEach(id => {
+          const el = document.getElementById(id);
+          el.textContent = "Unavailable (No API Key)";
+          el.removeAttribute("data-i18n");
+          el.style.color = "#888";
+          el.style.fontStyle = "italic";
+        });
+        return;
+      }
+
       if (data.status === "success" && data.metrics) {
+
         const { ner, re } = data.metrics;
 
         // Remove data-i18n so it doesn't get overwritten by localization

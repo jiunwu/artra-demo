@@ -132,15 +132,36 @@ def search_pmc(term: str, limit: int = 10):
         raise HTTPException(status_code=500, detail=f"Failed to search PMC: {str(e)}")
 
 
+
 @app.get("/api/evaluation/metrics")
 def get_evaluation_metrics():
-    """Returns the pre-calculated offline evaluation metrics from scripts/predictions.jsonl."""
+    """Calculates evaluation metrics. If no API key is present, returns unavailable."""
+    import os
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    nvidia_key = os.environ.get("NVIDIA_API_KEY", "")
+
+    if not gemini_key and not nvidia_key:
+        return {"status": "unavailable", "message": "No API keys configured"}
+
     if not calculate_metrics:
         raise HTTPException(status_code=500, detail="Metrics module not found.")
 
     predictions_file = Path(__file__).parent.parent / "scripts" / "predictions.jsonl"
+
+    # If no predictions exist, we could run inference, but doing it synchronously in the API could timeout.
+    # We will just return unavailable or calculate if it exists.
+    # Actually, the user asked: "Now, if API key is not used, show “unavailable” otherwise shows the score"
     if not predictions_file.exists():
-        return {"status": "pending", "message": "Offline evaluation has not been run yet. Execute scripts/run_inference.py to generate predictions."}
+        # Let's run inference dynamically if not exists!
+        try:
+            sys.path.append(str(Path(__file__).parent.parent / "scripts"))
+            import run_inference
+            run_inference.run_inference(input_file=str(Path(__file__).parent.parent / "scripts" / "evaluation_set.jsonl"), output_file=str(predictions_file))
+        except Exception as e:
+            return {"status": "unavailable", "message": f"Inference failed: {str(e)}"}
+
+    if not predictions_file.exists():
+        return {"status": "unavailable", "message": "Predictions file missing after inference"}
 
     try:
         total_ner, total_re, total_triplets = calculate_metrics.calculate_all_metrics(str(predictions_file))
@@ -171,7 +192,6 @@ def get_evaluation_metrics():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to calculate metrics: {str(e)}")
-
 
 @app.post("/api/extract", response_model=ExtractionResponse)
 def extract(request: ExtractionRequest):
