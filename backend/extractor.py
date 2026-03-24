@@ -11,6 +11,10 @@ _gemini_client: genai.Client | None = None
 _nim_client: OpenAI | None = None
 
 
+def _is_truthy(value: str | None) -> bool:
+    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def get_gemini_client() -> genai.Client:
     global _gemini_client
     if _gemini_client is None:
@@ -24,10 +28,16 @@ def get_gemini_client() -> genai.Client:
 def get_nim_client() -> OpenAI:
     global _nim_client
     if _nim_client is None:
-        api_key = os.environ.get("NVIDIA_API_KEY")
-        if not api_key:
-            raise ValueError("NVIDIA_API_KEY environment variable not set")
-        _nim_client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=api_key)
+        use_local_llm = _is_truthy(os.environ.get("USE_LOCAL_LLM"))
+        if use_local_llm:
+            local_base_url = os.environ.get("LOCAL_LLM_BASE_URL", "http://127.0.0.1:8080/v1").strip()
+            local_api_key = os.environ.get("LOCAL_LLM_API_KEY") or "local"
+            _nim_client = OpenAI(base_url=local_base_url, api_key=local_api_key)
+        else:
+            api_key = os.environ.get("NVIDIA_API_KEY")
+            if not api_key:
+                raise ValueError("NVIDIA_API_KEY environment variable not set")
+            _nim_client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=api_key)
     return _nim_client
 
 

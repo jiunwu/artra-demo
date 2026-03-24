@@ -106,7 +106,15 @@ EXAMPLE_TEXTS = [
 def health():
     gemini_key = os.environ.get("GEMINI_API_KEY", "")
     nvidia_key = os.environ.get("NVIDIA_API_KEY", "")
-    return {"status": "ok", "gemini_available": bool(gemini_key), "nvidia_nim_available": bool(nvidia_key)}
+    use_local_llm = os.environ.get("USE_LOCAL_LLM", "").strip().lower() in {"1", "true", "yes", "on"}
+    local_base_url = os.environ.get("LOCAL_LLM_BASE_URL", "http://127.0.0.1:8080/v1")
+    return {
+        "status": "ok",
+        "gemini_available": bool(gemini_key),
+        "nvidia_nim_available": bool(nvidia_key),
+        "local_llm_enabled": use_local_llm,
+        "local_llm_base_url": local_base_url,
+    }
 
 
 @app.get("/api/examples")
